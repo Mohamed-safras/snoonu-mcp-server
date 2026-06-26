@@ -1,0 +1,29 @@
+services:
+  snoonu-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: snoonu
+      POSTGRES_PASSWORD: snoonu
+      POSTGRES_DB: snoonu_mcp
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SNOONU_DB_URL: postgresql://snoonu:snoonu@snoonu-db:5432/snoonu_mcp
+      SNOONU_MCP_PORT: 8000
+    ports: ["8000:8000"]
+    depends_on: [snoonu-db]
+  pgadmin:
+    image: dpage/pgadmin4
+    ports: ["8081:80"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@snoonu.com
+      PGADMIN_DEFAULT_PASSWORD: snoonu
+    volumes: ["pgadmin-data:/var/lib/pgadmin"]
+    depends_on: [snoonu-db]
+volumes:
+  pgdata:
+  pgadmin-data:
