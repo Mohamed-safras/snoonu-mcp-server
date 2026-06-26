@@ -1,0 +1,14 @@
+{
+  "name": "snoonu-mcp-server",
+  "version": "0.1.0",
+  "transport": "streamable-http",
+  "tools": [
+    "snoonu_search_products",
+    "snoonu_get_product",
+    "snoonu_list_categories",
+    "snoonu_list_delivery_cities",
+    "snoonu_check_delivery",
+    "snoonu_create_order",
+    "snoonu_track_order"
+  ]
+}
