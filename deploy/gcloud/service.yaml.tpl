@@ -56,7 +56,7 @@ spec:
               path: /ready
               port: 8080
             periodSeconds: 30
-          dependsOn: [redis, postgres]
+            failureThreshold: 5
         - name: redis
           image: redis:7-alpine
           resources:
