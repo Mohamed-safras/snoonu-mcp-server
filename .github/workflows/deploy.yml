@@ -46,6 +46,12 @@ jobs:
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
           echo "PG_IMAGE=$PG_IMAGE" >> "$GITHUB_ENV"
 
+      - name: Look up existing service hostname (if any)
+        run: |
+          EXISTING_URL=$(gcloud run services describe "${SERVICE_NAME}" --region="${REGION}" \
+            --format='value(status.url)' 2>/dev/null || true)
+          echo "EXISTING_HOST=${EXISTING_URL#https://}" >> "$GITHUB_ENV"
+
       - name: Render service.yaml
         run: envsubst < deploy/gcloud/service.yaml.tpl > /tmp/service.yaml
 

@@ -40,7 +40,10 @@ build_and_push() {
 # ---- 3. deploy to Cloud Run (free at low traffic: Cloud Run's always-free tier
 #         covers ~2M requests/mo; this stays within it for dev/demo use) -------
 deploy() {
-  export PROJECT_ID PROJECT_NUMBER REGION SERVICE_NAME IMAGE PG_IMAGE
+  EXISTING_HOST="$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" \
+    --format='value(status.url)' 2>/dev/null | sed 's#https://##' || true)"
+
+  export PROJECT_ID PROJECT_NUMBER REGION SERVICE_NAME IMAGE PG_IMAGE EXISTING_HOST
   envsubst < deploy/gcloud/service.yaml.tpl > /tmp/snoonu-mcp-service.yaml
 
   gcloud run services replace /tmp/snoonu-mcp-service.yaml --region="$REGION"

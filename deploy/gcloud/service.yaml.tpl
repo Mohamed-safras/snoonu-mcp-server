@@ -42,9 +42,12 @@ spec:
             - name: SNOONU_LOG_LEVEL
               value: "INFO"
             # MCP's DNS-rebinding protection only trusts localhost by default;
-            # the deployed Cloud Run hostname must be allowlisted explicitly.
+            # the deployed Cloud Run hostname(s) must be allowlisted explicitly.
+            # Cloud Run exposes the service under BOTH a project-number hostname
+            # and a separate hash-based hostname (the one status.url reports) —
+            # both must be listed, EXISTING_HOST is the latter, fetched pre-deploy.
             - name: SNOONU_ALLOWED_HOSTS
-              value: "${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app,127.0.0.1:*,localhost:*,[::1]:*"
+              value: "${SERVICE_NAME}-${PROJECT_NUMBER}.${REGION}.run.app,${EXISTING_HOST},127.0.0.1:*,localhost:*,[::1]:*"
           resources:
             limits:
               cpu: "1"
