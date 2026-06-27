@@ -3,27 +3,83 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: snoonu
-      POSTGRES_PASSWORD: snoonu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snoonu}
       POSTGRES_DB: snoonu_mcp
     ports: ["5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
-  mcp:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U snoonu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: ["redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mcp-server:
     build:
       context: .
       dockerfile: Dockerfile
     environment:
-      SNOONU_DB_URL: postgresql://snoonu:snoonu@snoonu-db:5432/snoonu_mcp
+      SNOONU_DB_URL: postgresql://snoonu:${POSTGRES_PASSWORD:-snoonu}@snoonu-db:5432/snoonu_mcp
       SNOONU_MCP_PORT: 8000
+      SNOONU_MCP_WORKERS: ${SNOONU_MCP_WORKERS:-4}
+      SNOONU_REDIS_URL: redis://redis:6379/0
+      SNOONU_LOG_LEVEL: ${SNOONU_LOG_LEVEL:-INFO}
+      SNOONU_LOG_JSON: "true"
+      SNOONU_ORDER_MAX_PER_HOUR: ${SNOONU_ORDER_MAX_PER_HOUR:-25}
     ports: ["8000:8000"]
-    depends_on: [snoonu-db]
+    depends_on:
+      snoonu-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   pgadmin:
     image: dpage/pgadmin4
     ports: ["8081:80"]
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@snoonu.com
-      PGADMIN_DEFAULT_PASSWORD: snoonu
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-snoonu}
     volumes: ["pgadmin-data:/var/lib/pgadmin"]
     depends_on: [snoonu-db]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - promdata:/prometheus
+    ports: ["9090:9090"]
+    depends_on: [mcp-server]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports: ["3001:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafanadata:/var/lib/grafana
+    depends_on: [prometheus]
+    restart: unless-stopped
+
 volumes:
   pgdata:
   pgadmin-data:
+  redisdata:
+  promdata:
+  grafanadata:
