@@ -14,6 +14,6 @@ ENV SNOONU_MCP_PORT=8000
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${SNOONU_MCP_PORT}/health').read()"
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT', os.environ['SNOONU_MCP_PORT']) + '/health').read()"
 
-CMD ["sh", "-c", "gunicorn src.server:app -k uvicorn.workers.UvicornWorker -w ${SNOONU_MCP_WORKERS:-4} -b 0.0.0.0:${SNOONU_MCP_PORT} --access-logfile - --error-logfile -"]
+CMD ["sh", "-c", "gunicorn src.server:app -k uvicorn.workers.UvicornWorker -w ${SNOONU_MCP_WORKERS:-4} -b 0.0.0.0:${PORT:-${SNOONU_MCP_PORT}} --access-logfile - --error-logfile -"]
