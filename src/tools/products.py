@@ -1,8 +1,10 @@
 from src.client import client
+from src.metrics import instrument_tool
 
 def register(mcp):
     @mcp.tool(name="snoonu_search_products")
-    def search_products(q:str, 
+    @instrument_tool("snoonu_search_products")
+    def search_products(q:str,
                         currency:str = "QAR", 
                         limit: int =24,
                         category:str | None = None, 
@@ -13,6 +15,7 @@ def register(mcp):
         return {"results": [_to_search_item(row) for row in rows]}
     
     @mcp.tool(name="snoonu_get_product")
+    @instrument_tool("snoonu_get_product")
     def get_product(product_id: str, currency: str = "QAR") -> dict | None:
         row = client.products.get(product_id)
         if not row:

@@ -5,12 +5,14 @@ from src.client import client
 from src.api.exceptions import ProductNotFoundError
 from src.order_rate_limit import check_rate_limit
 from src.activity_log import log_order_event
+from src.metrics import ORDERS_CREATED, instrument_tool
 
 def _new_ref() -> str:
     return "SNU-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 def register(mcp):
     @mcp.tool(name="snoonu_create_order")
+    @instrument_tool("snoonu_create_order")
     def create_order(cart: list[dict], recipient: dict, delivery: dict,
                       sender: dict, gift_message: str | None = None, currency: str = "QAR") -> dict:
         check_rate_limit()
@@ -27,11 +29,13 @@ def register(mcp):
         client.orders.create(ref, total, currency, recipient, delivery, sender,
                               gift_message, expires_at, cart)
         log_order_event(ref, "created", total)
+        ORDERS_CREATED.inc()
 
         return {"order_ref": ref, "pay_url": f"https://your-next-app.example.com/pay/{ref}",
                 "total": {"amount": total, "currency": currency}, "expires_at": expires_at.isoformat()}
 
     @mcp.tool(name="snoonu_track_order")
+    @instrument_tool("snoonu_track_order")
     def track_order(order_number: str) -> dict:
         row = client.orders.get(order_number)
         if not row:

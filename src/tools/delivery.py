@@ -1,6 +1,7 @@
 import math
 from datetime import datetime, timezone
 from src.client import client
+from src.metrics import instrument_tool
 
 SNOONU_HQ = (25.3548, 51.4326)  # West Bay / Lusail, Doha — illustrative only
 
@@ -18,6 +19,7 @@ def _tier(km: float) -> tuple[str, int]:
 
 def register(mcp):
     @mcp.tool(name="snoonu_list_delivery_cities")
+    @instrument_tool("snoonu_list_delivery_cities")
     def list_delivery_cities(query: str | None = None, limit: int = 8) -> dict:
         rows = client.cities.list(query)
         sliced = rows[:limit]
@@ -25,6 +27,7 @@ def register(mcp):
                 "total_matched": len(rows), "showing": len(sliced)}
 
     @mcp.tool(name="snoonu_check_delivery")
+    @instrument_tool("snoonu_check_delivery")
     def check_delivery(city: str, delivery_date: str | None = None, product_id: str | None = None) -> dict:
         row = client.cities.get(city)
         if not row:
